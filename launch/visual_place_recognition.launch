@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="voc_file_path" default="$(find visual_place_recognition_ros)/voc/small_voc.yml.gz"/>
+    <arg name="image_dir_path" default="$(find visual_place_recognition_ros)/images"/>
+    <node pkg="visual_place_recognition_ros" type="visual_place_recognition_node" name="visual_place_recognition" output="screen">
+        <param name="voc_file_path" value="$(arg voc_file_path)"/>
+        <param name="image_dir_path" value="$(arg image_dir_path)"/>
+    </node>
+</launch>
