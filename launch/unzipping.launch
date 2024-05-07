@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="image_topic" default="rgb/image_raw"/>
+    <node pkg="image_transport" type="republish" name="color_republish" args="compressed raw" >
+        <remap from="in" to="$(arg image_topic)"/>
+        <remap from="out" to="$(arg image_topic)"/>
+    </node>
+</launch>
