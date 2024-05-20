@@ -19,6 +19,14 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+struct VPRData
+{
+  DBoW3::EntryId id;
+  float x;
+  float y;
+  float theta;
+};
+
 class VPR
 {
 public:
@@ -34,11 +42,15 @@ private:
   load_image_file_paths(const std::string &image_dir_path, const std::string image_extension, const int num_images);
   std::vector<std::string>
   load_image_file_paths(const std::string &image_dir_path);
+  void load_poses(const std::string &image_dir_path);
   void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db);
   void query(const DBoW3::Database &db, const std::vector<cv::Mat> &features);
 
   std::string voc_file_path_;
   std::string image_dir_path_;
+  std::vector<VPRData> vpr_db_;
+
+  float match_threshold_;
 
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;

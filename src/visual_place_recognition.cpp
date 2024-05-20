@@ -14,6 +14,7 @@ VPR::VPR(void) : private_nh_("~")
 {
   private_nh_.param<std::string>("voc_file_path", voc_file_path_, std::string(""));
   private_nh_.param<std::string>("image_dir_path", image_dir_path_, std::string(""));
+  private_nh_.param<float>("match_threshold", match_threshold_, 0.9);
 
   // image_sub_ = nh_.subscribe("image", 1, &VPR::image_callback, this);
 
@@ -34,16 +35,22 @@ void VPR::process(void)
   ROS_INFO_STREAM("Database info: " << db);
 
   std::vector<std::string> image_file_paths = load_image_file_paths(image_dir_path_);
-  // const std::vector<cv::Mat> features = load_features(image_file_paths);
-  // add_db(features, db);
-  // query(db, features);
+  const std::vector<cv::Mat> features = load_features(image_file_paths);
+
+  load_poses(image_dir_path_);
+  add_db(features, db);
+
+  query(db, features);
 }
 
 void VPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db)
 {
   ROS_INFO_STREAM("Add images to database..");
-  for (const auto &feature : features)
-    db.add(feature);
+  for (int i = 0; i < features.size(); i++)
+  {
+    DBoW3::EntryId id = db.add(features[i]);
+    vpr_db_[i].id = id;
+  }
   ROS_INFO_STREAM("Done");
 }
 
@@ -90,11 +97,29 @@ VPR::load_image_file_paths(const std::string &image_dir_path)
     getline(iss, buffer, ',');
     image_file_paths.push_back(image_dir_path + "/" + buffer);
   }
-
-  for (const auto &image_file_path : image_file_paths)
-    ROS_INFO_STREAM("Image file path: " << image_file_path);
-
   return image_file_paths;
+}
+
+void VPR::load_poses(const std::string &image_dir_path)
+{
+  std::ifstream ifs(image_dir_path + "/data.csv");
+  std::vector<std::string> image_file_paths;
+  std::string line;
+  while (getline(ifs, line))
+  {
+    std::istringstream iss(line);
+    std::string comma_buf;
+    std::vector<std::string> line_bufs;
+    while (getline(iss, comma_buf, ','))
+      line_bufs.push_back(comma_buf);
+
+    VPRData vpr_data;
+    vpr_data.id = -1;
+    vpr_data.x = std::stof(line_bufs[1]);
+    vpr_data.y = std::stof(line_bufs[2]);
+    vpr_data.theta = std::stof(line_bufs[3]);
+    vpr_db_.push_back(vpr_data);
+  }
 }
 
 std::vector<cv::Mat> VPR::load_features(const std::vector<std::string> &image_file_paths)
@@ -130,7 +155,8 @@ void VPR::query(const DBoW3::Database &db, const std::vector<cv::Mat> &features)
     ROS_INFO_STREAM("Querying image " << i);
     db.query(features[i], ret, 4);
     for (const auto &r : ret)
-      ROS_INFO_STREAM("Image " << r.Id << " is " << r.Score);
+      if (r.Score > match_threshold_)
+        ROS_INFO_STREAM("Image " << r.Id << " is " << r.Score);
     ROS_INFO("----------------------------");
   }
   ROS_INFO_STREAM("Done");
