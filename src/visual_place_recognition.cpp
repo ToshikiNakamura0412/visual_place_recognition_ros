@@ -15,32 +15,76 @@ VPR::VPR(void) : private_nh_("~")
   private_nh_.param<std::string>("voc_file_path", voc_file_path_, std::string(""));
   private_nh_.param<std::string>("image_dir_path", image_dir_path_, std::string(""));
   private_nh_.param<float>("match_threshold", match_threshold_, 0.9);
+  private_nh_.param<int>("resolution", resolution_, 240);
 
-  // image_sub_ = nh_.subscribe("image", 1, &VPR::image_callback, this);
+  image_sub_ = nh_.subscribe("image", 1, &VPR::image_callback, this);
+  vpr_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("vpr_pose", 1);
+  image_pub_ = nh_.advertise<sensor_msgs::Image>("custom_image", 1);
 
   ROS_INFO_STREAM(ros::this_node::getName() << " node has started..");
   ROS_INFO_STREAM("voc_file_path: " << voc_file_path_);
   ROS_INFO_STREAM("image_dir_path: " << image_dir_path_);
+  ROS_INFO_STREAM("match_threshold: " << match_threshold_);
+  ROS_INFO_STREAM("resolution: " << resolution_);
+  ROS_INFO_STREAM("");
 }
 
-// void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
-// {
-//   ROS_INFO_STREAM("Received image");
-// }
+void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
+{
+  ROS_INFO_STREAM("Received image");
+  cv_bridge::CvImagePtr cv_ptr;
+  try{
+      cv_ptr = cv_bridge::toCvCopy(msg,sensor_msgs::image_encodings::MONO8);
+  }
+  catch(cv_bridge::Exception& ex){
+      ROS_ERROR("Could not convert to color image");
+      return;
+  }
+  image_pub_.publish(cv_ptr->toImageMsg());
+  scale_to_resolution(cv_ptr->image, resolution_);
+  cv::imshow("image", cv_ptr->image);
+  cv::waitKey(30);
+  query2(calc_features(cv_ptr->image));
+}
+
+void VPR::scale_to_resolution(cv::Mat &image, const int resolution)
+{
+  const int w = image.cols;
+  const int h = image.rows;
+  cv::resize(image, image, cv::Size(w * resolution / h, resolution));
+}
+
+cv::Mat VPR::calc_features(const cv::Mat &image)
+{
+  cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
+  std::vector<cv::KeyPoint> keypoints;
+  cv::Mat descriptors;
+  fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
+  return descriptors;
+}
+
+void VPR::query2(const cv::Mat &features)
+{
+  DBoW3::QueryResults ret;
+  db_.query(features, ret, 4);
+  for (const auto &r : ret)
+    if (r.Score > match_threshold_)
+      ROS_INFO_STREAM("Match to Image " << r.Id << " is " << r.Score);
+}
 
 void VPR::process(void)
 {
   const DBoW3::Vocabulary voc = load_vocabulary(voc_file_path_);
-  DBoW3::Database db = create_database(voc);
-  ROS_INFO_STREAM("Database info: " << db);
+  db_ = create_database(voc);
+  // ROS_INFO_STREAM("Database info: " << db);
 
   std::vector<std::string> image_file_paths = load_image_file_paths(image_dir_path_);
   const std::vector<cv::Mat> features = load_features(image_file_paths);
 
   load_poses(image_dir_path_);
-  add_db(features, db);
+  add_db(features, db_);
 
-  query(db, features);
+  // query(db, features);
 }
 
 void VPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db)
@@ -130,13 +174,13 @@ std::vector<cv::Mat> VPR::load_features(const std::vector<std::string> &image_fi
 
   for (const auto &image_file_path : image_file_paths)
   {
-    ROS_INFO_STREAM("Read image: " << image_file_path);
+    // ROS_INFO_STREAM("Read image: " << image_file_path);
     cv::Mat image = cv::imread(image_file_path, 0);
 
     if (image.empty())
       throw std::runtime_error("Could not open image " + image_file_path);
 
-    ROS_INFO_STREAM("Extract features: " << image_file_path);
+    // ROS_INFO_STREAM("Extract features: " << image_file_path);
     cv::Mat descriptors;
     fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
     features.push_back(descriptors);
@@ -167,6 +211,7 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "visual_place_recognition");
   VPR visual_place_recognition;
   visual_place_recognition.process();
+  ros::spin();
 
   return 0;
 }
