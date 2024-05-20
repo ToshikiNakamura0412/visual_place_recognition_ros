@@ -33,10 +33,10 @@ void VPR::process(void)
   DBoW3::Database db = create_database(voc);
   ROS_INFO_STREAM("Database info: " << db);
 
-  std::vector<std::string> image_file_paths = load_image_file_paths(image_dir_path_, ".png", 4);
-  const std::vector<cv::Mat> features = load_features(image_file_paths);
-  add_db(features, db);
-  query(db, features);
+  std::vector<std::string> image_file_paths = load_image_file_paths(image_dir_path_);
+  // const std::vector<cv::Mat> features = load_features(image_file_paths);
+  // add_db(features, db);
+  // query(db, features);
 }
 
 void VPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db)
@@ -74,6 +74,26 @@ VPR::load_image_file_paths(const std::string &image_dir_path, const std::string 
     ss << image_dir_path << "/image" << i << image_extension;
     image_file_paths.push_back(ss.str());
   }
+  return image_file_paths;
+}
+
+std::vector<std::string>
+VPR::load_image_file_paths(const std::string &image_dir_path)
+{
+  std::ifstream ifs(image_dir_path + "/data.csv");
+  std::vector<std::string> image_file_paths;
+  std::string line;
+  while (getline(ifs, line))
+  {
+    std::istringstream iss(line);
+    std::string buffer;
+    getline(iss, buffer, ',');
+    image_file_paths.push_back(image_dir_path + "/" + buffer);
+  }
+
+  for (const auto &image_file_path : image_file_paths)
+    ROS_INFO_STREAM("Image file path: " << image_file_path);
+
   return image_file_paths;
 }
 

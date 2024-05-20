@@ -32,6 +32,8 @@ private:
   std::vector<cv::Mat> load_features(const std::vector<std::string> &image_file_paths);
   std::vector<std::string>
   load_image_file_paths(const std::string &image_dir_path, const std::string image_extension, const int num_images);
+  std::vector<std::string>
+  load_image_file_paths(const std::string &image_dir_path);
   void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db);
   void query(const DBoW3::Database &db, const std::vector<cv::Mat> &features);
 
