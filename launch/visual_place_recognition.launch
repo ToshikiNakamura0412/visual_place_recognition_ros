@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="image_topic" default="/grasscam/image_raw"/>
+    <!-- <arg name="voc_file_path" default="$(find visual_place_recognition_ros)/voc/small_voc.yml.gz"/> -->
+    <arg name="voc_file_path" default="$(find visual_place_recognition_ros)/dataset/small_voc.yml.gz"/>
+    <!-- <arg name="image_dir_path" default="$(find visual_place_recognition_ros)/images"/> -->
+    <arg name="image_dir_path" default="$(find visual_place_recognition_ros)/dataset"/>
+    <arg name="pcd_file" default="$(env HOME)/pcd/ikuta_outdoor.pcd"/>
+
+    <node pkg="visual_place_recognition_ros" type="visual_place_recognition_node" name="visual_place_recognition" output="screen">
+        <param name="voc_file_path" value="$(arg voc_file_path)"/>
+        <param name="image_dir_path" value="$(arg image_dir_path)"/>
+        <param name="match_threshold" value="0.5"/>
+        <param name="resolution" value="240"/>
+        <remap from="image" to="$(arg image_topic)"/>
+    </node>
+
+    <include file="$(find visual_place_recognition_ros)/launch/unzipping.launch">
+        <arg name="image_topic" value="$(arg image_topic)"/>
+    </include>
+    <node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pointcloud" args="$(arg pcd_file)" output="screen">
+        <param name="frame_id" value="map"/>
+        <param name="latch" value="true"/>
+    </node>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find visual_place_recognition_ros)/launch/create_dataset.rviz"/>
+</launch>
