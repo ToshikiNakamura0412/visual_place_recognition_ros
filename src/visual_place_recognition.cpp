@@ -31,7 +31,6 @@ VPR::VPR(void) : private_nh_("~")
 
 void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
 {
-  ROS_INFO_STREAM("Received image");
   cv_bridge::CvImagePtr cv_ptr;
   try{
       cv_ptr = cv_bridge::toCvCopy(msg,sensor_msgs::image_encodings::MONO8);
@@ -42,8 +41,6 @@ void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
   }
   image_pub_.publish(cv_ptr->toImageMsg());
   scale_to_resolution(cv_ptr->image, resolution_);
-  cv::imshow("image", cv_ptr->image);
-  cv::waitKey(30);
   query2(calc_features(cv_ptr->image));
 }
 
@@ -68,8 +65,25 @@ void VPR::query2(const cv::Mat &features)
   DBoW3::QueryResults ret;
   db_.query(features, ret, 4);
   for (const auto &r : ret)
+  {
     if (r.Score > match_threshold_)
+    {
       ROS_INFO_STREAM("Match to Image " << r.Id << " is " << r.Score);
+      for (const auto &data : vpr_db_)
+      {
+        if (data.id == r.Id)
+        {
+          geometry_msgs::PoseStamped pose;
+          pose.header.frame_id = "map";
+          pose.header.stamp = ros::Time::now();
+          pose.pose.position.x = data.x;
+          pose.pose.position.y = data.y;
+          pose.pose.orientation = tf::createQuaternionMsgFromYaw(data.theta);
+          vpr_pose_pub_.publish(pose);
+        }
+      }
+    }
+  }
 }
 
 void VPR::process(void)
