@@ -35,6 +35,8 @@ class VPR
 public:
   VPR(void);
   void process(void);
+  std::string get_mode(void) { return mode_;}
+  void create_confusion_matrix(void);
 
 private:
   void image_callback(const sensor_msgs::ImageConstPtr &msg);
@@ -47,13 +49,15 @@ private:
   load_image_file_paths(const std::string &image_dir_path);
   void load_poses(const std::string &image_dir_path);
   void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db);
-  void query(const DBoW3::Database &db, const std::vector<cv::Mat> &features);
   void scale_to_resolution(cv::Mat &image, const int resolution);
   cv::Mat calc_features(const cv::Mat &image);
-  void query2(const cv::Mat &features);
+  void query_pose(const cv::Mat &features);
+  void create_query_result(const std::vector<cv::Mat> &features);
 
+  std::string mode_;
   std::string voc_file_path_;
-  std::string image_dir_path_;
+  std::string ref_image_dir_path_;
+  std::string query_image_dir_path_;
   std::vector<VPRData> vpr_db_;
 
   float match_threshold_;
