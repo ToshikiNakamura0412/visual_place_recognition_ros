@@ -3,6 +3,7 @@ project(visual_place_recognition_ros)
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
+  geometry_msgs
   roscpp
   sensor_msgs
   std_msgs
@@ -22,6 +23,12 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+)
+
+add_executable(realtime_visual_place_recognition_node src/realtime_visual_place_recognition.cpp)
+target_link_libraries(realtime_visual_place_recognition_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )
 
 add_executable(visual_place_recognition_node src/visual_place_recognition.cpp)
