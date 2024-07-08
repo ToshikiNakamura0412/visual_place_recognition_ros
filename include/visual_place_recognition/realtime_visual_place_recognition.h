@@ -35,6 +35,15 @@ struct DBoW3Params
   DBoW3::ScoringType score = DBoW3::L1_NORM;
 };
 
+struct VPRData
+{
+  DBoW3::EntryId id;
+  float x;
+  float y;
+  float theta;
+};
+
+
 class RealtimeVPR
 {
 public:
@@ -45,10 +54,13 @@ private:
   void pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
   void scale_to_resolution(cv::Mat &image, const int resolution);
   cv::Mat calc_features(const cv::Mat &image);
+  void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db);
 
   VPRParams vpr_params_;
   DBoW3Params dbow3_params_;
   std::vector<cv::Mat> features_;
+  DBoW3::Database db_;
+  std::vector<VPRData> vpr_db_;
 
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;

@@ -72,6 +72,11 @@ void RealtimeVPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
         ros::Time start = ros::Time::now();
         voc_->create(features_);
         ROS_INFO_STREAM("vocabulary created in " << (ros::Time::now() - start).toSec() << " sec");
+        ROS_WARN_STREAM("database created");
+        start = ros::Time::now();
+        db_ = DBoW3::Database(*voc_, false, 0);
+        add_db(features_, db_);
+        ROS_INFO_STREAM("database created in " << (ros::Time::now() - start).toSec() << " sec");
       }
     }
   }
@@ -91,6 +96,16 @@ cv::Mat RealtimeVPR::calc_features(const cv::Mat &image)
   cv::Mat descriptors;
   fdetector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
   return descriptors;
+}
+
+void RealtimeVPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db)
+{
+  for (int i = 0; i < features.size(); i++)
+  {
+    DBoW3::EntryId id = db.add(features[i]);
+    if (vpr_db_.size() > i)
+      vpr_db_[i].id = id;
+  }
 }
 
 int main(int argc, char *argv[])
