@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="pcd_file" default="$(env HOME)/pcd/ikuta_outdoor.pcd"/>
+    <arg name="image_topic" default="/grasscam/image_raw"/>
+    <arg name="pose_topic" default="/localized_pose"/>
+
+    <node pkg="visual_place_recognition_ros" type="realtime_visual_place_recognition_node" name="realtime_vpr" output="screen">
+        <remap from="image" to="$(arg image_topic)"/>
+        <remap from="pose" to="$(arg pose_topic)"/>
+    </node>
+
+    <node pkg="image_transport" type="republish" name="color_republish" args="compressed raw" >
+        <remap from="in" to="$(arg image_topic)"/>
+        <remap from="out" to="$(arg image_topic)"/>
+    </node>
+    <node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pointcloud" args="$(arg pcd_file)" output="screen">
+        <param name="frame_id" value="map"/>
+        <param name="latch" value="true"/>
+    </node>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find visual_place_recognition_ros)/launch/rviz.rviz"/>
+</launch>
