@@ -12,6 +12,8 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <tf/transform_datatypes.h>
+#include <tf2/utils.h>
 #include <vector>
 
 #include <opencv2/core/core.hpp>
@@ -35,14 +37,17 @@ struct DBoW3Params
   DBoW3::ScoringType score = DBoW3::L1_NORM;
 };
 
-struct VPRData
+class VPRData
 {
-  DBoW3::EntryId id;
-  float x;
-  float y;
-  float theta;
-};
+public:
+  VPRData(void) {}
+  VPRData(const float x, const float y, const float theta) : x(x), y(y), theta(theta) {}
 
+  DBoW3::EntryId id = -1;
+  float x = 0.0;
+  float y = 0.0;
+  float theta = 0.0;
+};
 
 class RealtimeVPR
 {
@@ -54,7 +59,8 @@ private:
   void pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
   void scale_to_resolution(cv::Mat &image, const int resolution);
   cv::Mat calc_features(const cv::Mat &image);
-  void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db);
+  void query_pose(const cv::Mat &features);
+  void add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db, std::vector<VPRData> &vpr_db);
 
   VPRParams vpr_params_;
   DBoW3Params dbow3_params_;
@@ -66,6 +72,7 @@ private:
   ros::NodeHandle private_nh_;
   ros::Subscriber pose_sub_;
   ros::Subscriber image_sub_;
+  ros::Publisher vpr_pose_pub_;
   ros::Publisher image_pub_;
 
   geometry_msgs::PoseWithCovarianceStamped pose_;

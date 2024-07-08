@@ -16,6 +16,7 @@ RealtimeVPR::RealtimeVPR(void) : private_nh_("~")
   private_nh_.param<float>("dist_threshold", vpr_params_.dist_threshold_, 1.0);
 
   pose_sub_ = nh_.subscribe("pose", 1, &RealtimeVPR::pose_callback, this);
+  vpr_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("vpr_pose", 1);
   image_sub_ = nh_.subscribe("image", 1, &RealtimeVPR::image_callback, this);
   image_pub_ = nh_.advertise<sensor_msgs::Image>("custom_image", 1);
 
@@ -51,8 +52,11 @@ void RealtimeVPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
     ROS_ERROR("Could not convert to color image");
     return;
   }
-  scale_to_resolution(cv_ptr->image, 240);
+  scale_to_resolution(cv_ptr->image, vpr_params_.resolution_);
   image_pub_.publish(cv_ptr->toImageMsg());
+
+  if (features_.size() > 130)
+    query_pose(calc_features(cv_ptr->image));
 
   if (vpr_params_.pose_subscribed_)
   {
@@ -64,19 +68,16 @@ void RealtimeVPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
     {
       vpr_params_.pose_subscribed_ = false;
       features_.push_back(calc_features(cv_ptr->image));
+      vpr_db_.push_back(
+          VPRData(pose_.pose.pose.position.x, pose_.pose.pose.position.y, tf2::getYaw(pose_.pose.pose.orientation)));
 
       if (features_.size() != 0 && features_.size() % vpr_params_.num_of_voc_create_trigger_ == 0)
       {
-        ROS_INFO_STREAM("feature size: " << features_.size());
-        ROS_WARN_STREAM("create vocabulary");
-        ros::Time start = ros::Time::now();
         voc_->create(features_);
-        ROS_INFO_STREAM("vocabulary created in " << (ros::Time::now() - start).toSec() << " sec");
-        ROS_WARN_STREAM("database created");
-        start = ros::Time::now();
         db_ = DBoW3::Database(*voc_, false, 0);
-        add_db(features_, db_);
-        ROS_INFO_STREAM("database created in " << (ros::Time::now() - start).toSec() << " sec");
+        add_db(features_, db_, vpr_db_);
+
+        ROS_WARN_STREAM("database created (" << features_.size() << " features)");
       }
     }
   }
@@ -98,13 +99,32 @@ cv::Mat RealtimeVPR::calc_features(const cv::Mat &image)
   return descriptors;
 }
 
-void RealtimeVPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db)
+void RealtimeVPR::query_pose(const cv::Mat &features)
+{
+  DBoW3::QueryResults ret;
+  db_.query(features, ret, 1);
+  for (const auto &data : vpr_db_)
+  {
+    if (data.id == ret.front().Id)
+    {
+      geometry_msgs::PoseStamped pose;
+      pose.header.frame_id = "map";
+      pose.header.stamp = ros::Time::now();
+      pose.pose.position.x = data.x;
+      pose.pose.position.y = data.y;
+      pose.pose.orientation = tf::createQuaternionMsgFromYaw(data.theta);
+      vpr_pose_pub_.publish(pose);
+    }
+  }
+}
+
+void RealtimeVPR::add_db(const std::vector<cv::Mat> &features, DBoW3::Database &db, std::vector<VPRData> &vpr_db)
 {
   for (int i = 0; i < features.size(); i++)
   {
     DBoW3::EntryId id = db.add(features[i]);
-    if (vpr_db_.size() > i)
-      vpr_db_[i].id = id;
+    if (vpr_db.size() > i)
+      vpr_db[i].id = id;
   }
 }
 
