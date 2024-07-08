@@ -36,12 +36,14 @@ VPR::VPR(void) : private_nh_("~")
 void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
 {
   cv_bridge::CvImagePtr cv_ptr;
-  try{
-      cv_ptr = cv_bridge::toCvCopy(msg,sensor_msgs::image_encodings::MONO8);
+  try
+  {
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
   }
-  catch(cv_bridge::Exception& ex){
-      ROS_ERROR("Could not convert to color image");
-      return;
+  catch (cv_bridge::Exception &ex)
+  {
+    ROS_ERROR("Could not convert to color image");
+    return;
   }
   image_pub_.publish(cv_ptr->toImageMsg());
   scale_to_resolution(cv_ptr->image, resolution_);
@@ -178,8 +180,7 @@ VPR::load_image_file_paths(const std::string &image_dir_path, const std::string 
   return image_file_paths;
 }
 
-std::vector<std::string>
-VPR::load_image_file_paths(const std::string &image_dir_path)
+std::vector<std::string> VPR::load_image_file_paths(const std::string &image_dir_path)
 {
   std::ifstream ifs(image_dir_path + "/data.csv");
   std::vector<std::string> image_file_paths;
