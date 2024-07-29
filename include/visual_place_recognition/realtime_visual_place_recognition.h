@@ -19,6 +19,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
+#include <visual_place_recognition_ros/Feature.h>
+
 #include "DBoW3.h"
 
 struct VPRParams
@@ -56,6 +58,7 @@ public:
 
 private:
   void image_callback(const sensor_msgs::ImageConstPtr &msg);
+  void image_callback2(const visual_place_recognition_ros::Feature::ConstPtr &msg);
   void pose_callback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
   void scale_to_resolution(cv::Mat &image, const int resolution);
   cv::Mat calc_features(const cv::Mat &image);

@@ -9,13 +9,17 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf2
   dbow3_ros
+  my_research_tools
 )
 find_package(OpenCV REQUIRED)
+
+add_message_files(FILES Feature.msg)
+generate_messages(DEPENDENCIES sensor_msgs)
 
 ###################################
 ## catkin specific configuration ##
 ###################################
-catkin_package()
+catkin_package(CATKIN_DEPENDS message_runtime)
 
 ###########
 ## Build ##

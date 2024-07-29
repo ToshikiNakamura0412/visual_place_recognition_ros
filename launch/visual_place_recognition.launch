@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="mode" default="evaluation" doc="runtime or evaluation"/>
+    <arg name="mode" default="runtime" doc="runtime or evaluation"/>
 
-    <arg name="date_ref" default="062717"/>
-    <arg name="date_query" default="07011456"/>
+    <arg name="date_ref" default="0606"/>
+    <arg name="date_query" default="0606"/>
     <arg name="dir_end" default="" doc=" or _combined"/>
-    <arg name="voc_file_path" default="$(env HOME)/dataset/dataset_$(arg date_ref)_ref$(arg dir_end)/small_voc.yml.gz"/>
-    <arg name="ref_image_dir_path" default="$(env HOME)/dataset/dataset_$(arg date_ref)_ref$(arg dir_end)"/>
-    <arg name="query_image_dir_path" default="$(env HOME)/dataset/dataset_$(arg date_query)_query$(arg dir_end)"/>
+    <arg name="voc_file_path" default="$(env HOME)/dataset/dataset_$(arg date_ref)/dataset_$(arg date_ref)_ref$(arg dir_end)/small_voc.yml.gz"/>
+    <arg name="ref_image_dir_path" default="$(env HOME)/dataset/dataset_$(arg date_ref)/dataset_$(arg date_ref)_ref$(arg dir_end)"/>
+    <arg name="query_image_dir_path" default="$(env HOME)/dataset/dataset_$(arg date_ref)/dataset_$(arg date_query)_query$(arg dir_end)"/>
 
     <arg name="pcd_file" default="$(env HOME)/pcd/ikuta_outdoor.pcd"/>
     <arg name="image_topic" default="/grasscam/image_raw"/>

@@ -50,6 +50,11 @@ void VPR::image_callback(const sensor_msgs::ImageConstPtr &msg)
   query_pose(calc_features(cv_ptr->image));
 }
 
+void VPR::image_callback2(const visual_place_recognition_ros::Feature::ConstPtr &msg)
+{
+  // query_pose();
+}
+
 void VPR::scale_to_resolution(cv::Mat &image, const int resolution)
 {
   const int w = image.cols;
